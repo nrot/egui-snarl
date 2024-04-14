@@ -9,6 +9,7 @@ use egui::{
 
 use crate::{InPin, InPinId, Node, NodeId, OutPin, OutPinId, Snarl};
 
+pub mod events;
 mod background_pattern;
 mod pin;
 mod state;
@@ -257,6 +258,10 @@ pub struct SnarlStyle {
     #[cfg_attr(feature = "egui-probe", egui_probe(skip))]
     /// Do not access other than with .., here to emulate `#[non_exhaustive(pub)]`
     pub _non_exhaustive: (),
+
+    #[cfg_attr(feature="serde", serde(skip))]
+    /// User events. Do not save 
+    pub _graph_events: Box<dyn events::GraphEventsDebug>
 }
 
 impl SnarlStyle {
@@ -672,6 +677,7 @@ impl<T> Snarl<T> {
                 let from_r = &output_info[&wire.out_pin];
                 let to_r = &input_info[&wire.in_pin];
 
+                // 
                 if !wire_hit && !snarl_state.has_new_wires() && bg_r.hovered() && !bg_r.dragged() {
                     // Try to find hovered wire
                     // If not draggin new wire
