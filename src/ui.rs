@@ -773,7 +773,7 @@ impl<T> Snarl<T> {
                     let graph_pos = snarl_state.screen_pos_to_graph(screen_pos, viewport);
                     snarl_state.update_rect_selection(graph_pos);
                 } else {
-                    snarl_state.pan(-bg_r.drag_delta());
+                    snarl_state.pan(style._graph_events.move_area_delta(&bg_r, &input_state));
                 }
             }
 
@@ -1104,7 +1104,7 @@ impl<T> Snarl<T> {
 
         // Node move
         if style._graph_events.node_move(&r, input) {
-            node_moved = Some((node, snarl_state.screen_vec_to_graph(r.drag_delta())));
+            node_moved = Some((node, snarl_state.screen_vec_to_graph(style._graph_events.node_move_delta(&r, input))));
         }
 
         //Select one node
@@ -1290,25 +1290,28 @@ impl<T> Snarl<T> {
                         }
                     }
 
-                    // Start drag wire
-                    if style._graph_events.start_drag_wire(&r, &input) {
-                        todo!("Rewrite to grap event usage");
-                        if input.modifiers.command {
-                            snarl_state.start_new_wires_out(&in_pin.remotes);
-                            if !input.modifiers.shift {
-                                self.drop_inputs(in_pin.id);
-                                if !self.nodes.contains(node.0) {
-                                    // If removed
-                                    return;
-                                }
+                    // Start new wire out
+                    if style._graph_events.start_new_wire_out(&r, &input) {
+                        snarl_state.start_new_wires_out(&in_pin.remotes);
+                    } else {
+                        // Drop inputs
+                        if style._graph_events.drop_inputs_pin(&r, &input) {
+                            self.drop_inputs(in_pin.id);
+                            if !self.nodes.contains(node.0) {
+                                // If removed
+                                return;
                             }
                         } else {
-                            snarl_state.start_new_wire_in(in_pin.id);
+                            // Start new wire in
+                            if style._graph_events.start_new_wire_in(&r, &input) {
+                                snarl_state.start_new_wire_in(in_pin.id);
+                            } else {
+                                // Stop drag wire
+                                if style._graph_events.stop_drag_wire(&r, &input) {
+                                    drag_released = true;
+                                }
+                            }
                         }
-                    }
-                    // Stop drag wire
-                    if r.drag_stopped() {
-                        drag_released = true;
                     }
 
                     let mut pin_size = pin_size;
@@ -1417,27 +1420,46 @@ impl<T> Snarl<T> {
                         }
                     }
 
-                    // Start drag wire
-                    if style._graph_events.start_drag_wire(&r, &input) {
-                        if input.modifiers.command {
-                            snarl_state.start_new_wires_in(&out_pin.remotes);
-
-                            if !input.modifiers.shift {
-                                self.drop_outputs(out_pin.id);
-                                if !self.nodes.contains(node.0) {
-                                    // If removed
-                                    return;
-                                }
+                    // Start new wire out
+                    if style._graph_events.start_new_wire_out(&r, &input) {
+                        snarl_state.start_new_wires_in(&out_pin.remotes);
+                    } else {
+                        // Drop inputs
+                        if style._graph_events.drop_inputs_pin(&r, &input) {
+                            self.drop_outputs(out_pin.id);
+                            if !self.nodes.contains(node.0) {
+                                // If removed
+                                return;
                             }
                         } else {
-                            snarl_state.start_new_wire_out(out_pin.id);
+                            // Start new wire in
+                            if style._graph_events.start_new_wire_in(&r, &input) {
+                                snarl_state.start_new_wire_out(out_pin.id);
+                            } else {
+                                // Stop drag wire
+                                if style._graph_events.stop_drag_wire(&r, &input) {
+                                    drag_released = true;
+                                }
+                            }
                         }
                     }
 
-                    // Stop drag wire
-                    if style._graph_events.stop_drag_wire(&r, &input) {
-                        drag_released = true;
-                    }
+                    // // Start drag wire
+                    // if style._graph_events.start_drag_wire(&r, &input) {
+                    //     if input.modifiers.command {
+                    //         snarl_state.start_new_wires_in(&out_pin.remotes);
+
+                    //         if !input.modifiers.shift {
+                    //             self.drop_outputs(out_pin.id);
+                    //             if !self.nodes.contains(node.0) {
+                    //                 // If removed
+                    //                 return;
+                    //             }
+                    //         }
+                    //     } else {
+                    //         snarl_state.start_new_wire_out(out_pin.id);
+                    //     }
+                    // }
 
                     let mut pin_size = pin_size;
                     match input.pointer.hover_pos() {
