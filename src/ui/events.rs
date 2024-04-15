@@ -105,6 +105,9 @@ pub trait GraphEvents {
         response.clicked_by(PointerButton::Secondary)
     }
 
+
+    //TODO: Fix naming and logic for drag wires
+
     ///Start drag wire
     fn start_drag_wire(&mut self, response: &Response, input_state: &InputState) -> bool {
         response.drag_started_by(PointerButton::Primary)
